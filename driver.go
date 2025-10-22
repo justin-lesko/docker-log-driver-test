@@ -15,7 +15,6 @@ import (
 	"github.com/docker/docker/api/types/backend"
 	"github.com/docker/docker/api/types/plugins/logdriver"
 	"github.com/docker/docker/daemon/logger"
-	"github.com/docker/docker/daemon/logger/jsonfilelog"
 	protoio "github.com/gogo/protobuf/io"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -55,7 +54,8 @@ func (d *driver) StartLogging(file string, logCtx logger.Info) error {
 	if err := os.MkdirAll(filepath.Dir(logCtx.LogPath), 0755); err != nil {
 		return errors.Wrap(err, "error setting up logger dir")
 	}
-	l, err := jsonfilelog.New(logCtx)
+
+	l, err := New(logCtx)
 	if err != nil {
 		return errors.Wrap(err, "error creating jsonfile logger")
 	}

@@ -88,7 +88,7 @@ func (d *DatadogLogger) GetContainerTags(info logger.Info) string {
 		tags = append(tags, fmt.Sprintf("container_id:%s", info.ContainerID))
 	}
 	if info.ContainerName != "" {
-		tags = append(tags, fmt.Sprintf("container_name:%s", info.ContainerName))
+		tags = append(tags, fmt.Sprintf("container_name:%s", strings.TrimPrefix(info.ContainerName, "/")))
 	}
 	if info.ContainerImageName != "" {
 		tags = append(tags, fmt.Sprintf("image_name:%s", info.ContainerImageName))

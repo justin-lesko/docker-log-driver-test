@@ -100,6 +100,7 @@ func (d *DatadogLogger) GetContainerTags(info logger.Info) string {
 	for key, value := range info.ContainerLabels {
 		if value != "" {
 			sanitizedKey := strings.TrimPrefix(key, "com.amazonaws.ecs.")
+			sanitizedKey = strings.ReplaceAll(sanitizedKey, "-", "_")
 			tags = append(tags, fmt.Sprintf("%s:%s", sanitizedKey, value))
 		}
 	}

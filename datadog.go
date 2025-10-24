@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/docker/docker/daemon/logger"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"github.com/docker/docker/daemon/logger"
 )
 
 const (
@@ -16,8 +18,9 @@ const (
 )
 
 type DatadogLogger struct {
-	API *datadogV2.LogsApi
-	Ctx context.Context
+	API  *datadogV2.LogsApi
+	Ctx  context.Context
+	Info logger.Info
 }
 
 func New(info logger.Info) (logger.Logger, error) {
@@ -48,18 +51,22 @@ func New(info logger.Info) (logger.Logger, error) {
 	api := datadogV2.NewLogsApi(apiClient)
 
 	return &DatadogLogger{
-		API: api,
-		Ctx: ctx,
+		API:  api,
+		Ctx:  ctx,
+		Info: info,
 	}, nil
 }
 
 func (d *DatadogLogger) Name() string { return name }
 
 func (d *DatadogLogger) Log(message *logger.Message) error {
+	tags := d.GetContainerTags(d.Info)
+	fmt.Printf("EXTRACED CONTAINER TAGS: %s\n", tags)
+
 	body := []datadogV2.HTTPLogItem{
 		{
 			Ddsource: datadog.PtrString("datadog-docker-log-plugin"),
-			Ddtags:   datadog.PtrString("env:innovation"),
+			Ddtags:   datadog.PtrString(tags),
 			Message:  string(message.Line),
 		},
 	}
@@ -78,3 +85,32 @@ func (d *DatadogLogger) Log(message *logger.Message) error {
 }
 
 func (d *DatadogLogger) Close() error { return nil }
+
+func (d *DatadogLogger) GetContainerTags(info logger.Info) string {
+	tags := []string{}
+
+	if info.ContainerID != "" {
+		tags = append(tags, fmt.Sprintf("container_id:%s", info.ContainerID))
+	}
+	if info.ContainerName != "" {
+		tags = append(tags, fmt.Sprintf("container_name:%s", info.ContainerName))
+	}
+	if info.ContainerImageName != "" {
+		tags = append(tags, fmt.Sprintf("image_name:%s", info.ContainerImageName))
+	}
+	if info.ContainerImageID != "" {
+		tags = append(tags, fmt.Sprintf("image_id:%s", info.ContainerImageID))
+	}
+
+	for key, value := range info.ContainerLabels {
+		if value != "" {
+			sanitizedKey := strings.TrimPrefix(key, "com.amazonaws.ecs.")
+			tags = append(tags, fmt.Sprintf("%s:%s", sanitizedKey, value))
+		}
+	}
+
+	// TODO: remove
+	tags = append(tags, "env:innovation")
+
+	return strings.Join(tags, ",")
+}

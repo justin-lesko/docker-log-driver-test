@@ -60,7 +60,7 @@ func (d *DatadogLogger) Log(message *logger.Message) error {
 
 	body := []datadogV2.HTTPLogItem{
 		{
-			Ddsource: datadog.PtrString("datadog-docker-log-plugin"),
+			Ddsource: datadog.PtrString("ecs"),
 			Ddtags:   datadog.PtrString(tags),
 			Message:  string(message.Line),
 		},

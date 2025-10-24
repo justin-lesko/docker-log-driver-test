@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cpuguy83/docker-log-driver-test/internal/http"
+	"github.com/cpuguy83/docker-log-driver-test/internal/logger"
 	"github.com/docker/go-plugins-helpers/sdk"
 	"github.com/sirupsen/logrus"
 )
@@ -28,8 +30,8 @@ func main() {
 	}
 
 	h := sdk.NewHandler(`{"Implements": ["LogDriver"]}`)
-	handlers(&h, newDriver())
-	if err := h.ServeUnix("jsonfile", 0); err != nil {
+	http.Handlers(&h, logger.NewLogger())
+	if err := h.ServeUnix("datadog", 0); err != nil {
 		panic(err)
 	}
 }

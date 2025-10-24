@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 
+	driverlogger "github.com/cpuguy83/docker-log-driver-test/internal/logger"
 	"github.com/docker/docker/daemon/logger"
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/docker/go-plugins-helpers/sdk"
@@ -30,7 +31,7 @@ type ReadLogsRequest struct {
 	Config logger.ReadConfig
 }
 
-func handlers(h *sdk.Handler, d *driver) {
+func Handlers(h *sdk.Handler, d *driverlogger.Logger) {
 	h.HandleFunc("/LogDriver.StartLogging", func(w http.ResponseWriter, r *http.Request) {
 		var req StartLoggingRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

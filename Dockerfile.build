@@ -1,4 +1,36 @@
-FROM  golang:1.25
+############################
+# Builder
+############################
+FROM golang:1.25 AS builder
 
-COPY . /go/src/github.com/cpuguy83/docker-log-driver
-RUN cd /go/src/github.com/cpuguy83/docker-log-driver && go build --ldflags '-extldflags "-static"' -o /usr/bin/docker-log-driver
+# Static build (so alpine final stage needs minimal deps)
+ENV CGO_ENABLED=0 GO111MODULE=on
+
+WORKDIR /src
+
+# (Optional but recommended) Better layer caching:
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY internal ./internal
+COPY cmd ./cmd
+
+# Build the binary
+RUN go build -trimpath -ldflags="-s -w -extldflags '-static'" \
+    -o /out/docker-log-driver ./cmd/driver
+
+############################
+# Final (small)
+############################
+FROM alpine:latest
+
+# If your app makes HTTPS calls, you need CA certs:
+RUN apk add --no-cache ca-certificates
+
+# Copy just the binary, not the whole source dir
+COPY --from=builder /out/docker-log-driver /usr/bin/docker-log-driver
+
+# (Optional) run as non-root
+USER 65532:65532
+
+ENTRYPOINT ["/usr/bin/docker-log-driver"]

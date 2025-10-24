@@ -1,4 +1,4 @@
-package main
+package datadog
 
 import (
 	"context"
@@ -26,9 +26,6 @@ type DatadogLogger struct {
 func New(info logger.Info) (logger.Logger, error) {
 	ctx := context.Background()
 
-	fmt.Printf("ENV: %v\n", info.ContainerEnv)
-	fmt.Printf("CONFIG: %v\n", info.Config)
-
 	keys := make(map[string]datadog.APIKey)
 	if apiKey, ok := info.Config["DD_API_KEY"]; ok {
 		keys["apiKeyAuth"] = datadog.APIKey{Key: apiKey}
@@ -37,8 +34,6 @@ func New(info logger.Info) (logger.Logger, error) {
 	if apiKey, ok := info.Config["DD_APP_KEY"]; ok {
 		keys["appKeyAuth"] = datadog.APIKey{Key: apiKey}
 	}
-
-	fmt.Printf("AUTH KEYS: %v\n", keys)
 
 	ctx = context.WithValue(
 		ctx,

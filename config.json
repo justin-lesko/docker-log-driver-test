@@ -1,5 +1,5 @@
 {
-	"description": "jsonfilelog as plugin",
+	"description": "Datadog log plugin",
 	"documentation": "-",
 	"entrypoint": ["/usr/bin/docker-log-driver"],
 	"network": {
@@ -7,7 +7,7 @@
 	},
     "interface": {
 		"types": ["docker.logdriver/1.0"],
-		"socket": "jsonfile.sock"
+		"socket": "datadog.sock"
 	},
 	"env": [
 		{

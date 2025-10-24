@@ -1,4 +1,4 @@
-package main
+package logger
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/containerd/fifo"
+	"github.com/cpuguy83/docker-log-driver-test/internal/datadog"
 	"github.com/docker/docker/api/types/backend"
 	"github.com/docker/docker/api/types/plugins/logdriver"
 	"github.com/docker/docker/daemon/logger"
@@ -20,11 +21,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type driver struct {
-	mu     sync.Mutex
-	logs   map[string]*logPair
-	idx    map[string]*logPair
-	logger logger.Logger
+type Logger struct {
+	mu   sync.Mutex
+	logs map[string]*logPair
+	idx  map[string]*logPair
 }
 
 type logPair struct {
@@ -33,14 +33,14 @@ type logPair struct {
 	info   logger.Info
 }
 
-func newDriver() *driver {
-	return &driver{
+func NewLogger() *Logger {
+	return &Logger{
 		logs: make(map[string]*logPair),
 		idx:  make(map[string]*logPair),
 	}
 }
 
-func (d *driver) StartLogging(file string, logCtx logger.Info) error {
+func (d *Logger) StartLogging(file string, logCtx logger.Info) error {
 	d.mu.Lock()
 	if _, exists := d.logs[file]; exists {
 		d.mu.Unlock()
@@ -55,9 +55,9 @@ func (d *driver) StartLogging(file string, logCtx logger.Info) error {
 		return errors.Wrap(err, "error setting up logger dir")
 	}
 
-	l, err := New(logCtx)
+	l, err := datadog.New(logCtx)
 	if err != nil {
-		return errors.Wrap(err, "error creating jsonfile logger")
+		return errors.Wrap(err, "error creating datadog logger")
 	}
 
 	logrus.WithField("id", logCtx.ContainerID).WithField("file", file).WithField("logpath", logCtx.LogPath).Debugf("Start logging")
@@ -76,7 +76,7 @@ func (d *driver) StartLogging(file string, logCtx logger.Info) error {
 	return nil
 }
 
-func (d *driver) StopLogging(file string) error {
+func (d *Logger) StopLogging(file string) error {
 	logrus.WithField("file", file).Debugf("Stop logging")
 	d.mu.Lock()
 	lf, ok := d.logs[file]
@@ -122,7 +122,7 @@ func consumeLog(lf *logPair) {
 	}
 }
 
-func (d *driver) ReadLogs(info logger.Info, config logger.ReadConfig) (io.ReadCloser, error) {
+func (d *Logger) ReadLogs(info logger.Info, config logger.ReadConfig) (io.ReadCloser, error) {
 	d.mu.Lock()
 	lf, exists := d.idx[info.ContainerID]
 	d.mu.Unlock()
